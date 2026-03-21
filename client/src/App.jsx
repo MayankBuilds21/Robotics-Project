@@ -6,12 +6,17 @@ import Sidebar from './components/Sidebar'
 import IntroPage from './pages/IntroPage'
 import Dashboard from './pages/Dashboard'
 import SettingsPage from './pages/SettingsPage'
-import LoginPage from './pages/LoginPage' // Add this page
+import LoginPage from './pages/LoginPage'
 
 function App() {
   const [socket, setSocket] = useState(null)
   const [connected, setConnected] = useState(false)
-  const [operator, setOperator] = useState(null) // Operator authentication
+  const [operator, setOperator] = useState(() => {
+    // Restore login state from localStorage on app load
+    const savedOperator = localStorage.getItem('operator')
+    return savedOperator ? JSON.parse(savedOperator) : null
+  })
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     // Connect to backend WebSocket
@@ -37,6 +42,7 @@ function App() {
     })
 
     setSocket(newSocket)
+    setIsLoading(false)
 
     return () => {
       newSocket.close()
@@ -46,9 +52,23 @@ function App() {
   // Authentication handlers
   function handleLogin(user) {
     setOperator(user)
+    // Save to localStorage to persist login
+    localStorage.setItem('operator', JSON.stringify(user))
   }
+
   function handleLogout() {
     setOperator(null)
+    // Clear from localStorage on logout
+    localStorage.removeItem('operator')
+  }
+
+  // Show loading state while initializing
+  if (isLoading) {
+    return (
+      <div className="w-full h-screen bg-gradient-to-br from-slate-950 via-cyan-900 to-emerald-900 flex items-center justify-center">
+        <div className="text-cyan-400 font-mono text-lg">Initializing System...</div>
+      </div>
+    )
   }
 
   return (
@@ -60,20 +80,35 @@ function App() {
         {/* Main Content */}
         <div className="flex-1 overflow-hidden">
           <Routes>
-            <Route path="/" element={<IntroPage />} />
-            <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+            {/* Login page is the default route */}
+            <Route path="/login" element={
+              operator ? <Navigate to="/intro" /> : <LoginPage onLogin={handleLogin} />
+            } />
+            
+            {/* Home/Intro page (protected - requires login) */}
+            <Route path="/intro" element={
+              operator
+                ? <IntroPage />
+                : <Navigate to="/login" />
+            } />
+
+            {/* Dashboard page (protected) */}
             <Route path="/dashboard" element={
               operator
                 ? <Dashboard socket={socket} connected={connected} operator={operator} />
                 : <Navigate to="/login" />
             } />
+
+            {/* Settings page (protected) */}
             <Route path="/settings" element={
               operator
                 ? <SettingsPage operator={operator} />
                 : <Navigate to="/login" />
             } />
-            {/* Redirect unknown routes */}
-            <Route path="*" element={<Navigate to={operator ? "/dashboard" : "/login"} />} />
+
+            {/* Redirect all other routes */}
+            <Route path="/" element={<Navigate to={operator ? "/intro" : "/login"} />} />
+            <Route path="*" element={<Navigate to={operator ? "/intro" : "/login"} />} />
           </Routes>
         </div>
       </div>
