@@ -40,10 +40,19 @@ export default function Dashboard({ socket, connected, operator }) {
 
   const [logs, setLogs] = useState([])
 
+  // Start telemetry stream on mount
   useEffect(() => {
-    if (!socket) return
+    if (!socket) {
+      console.warn('⚠️ Socket not available')
+      return
+    }
 
-    socket.on('telemetry', (data) => {
+    console.log('📊 Starting telemetry stream...')
+    socket.emit('telemetry:start')
+
+    // Listen for telemetry updates
+    const handleTelemetry = (data) => {
+      console.log('📈 Telemetry received:', data)
       setTelemetry(data)
 
       const infoMsg = `Telemetry received - Battery: ${data.current.battery.toFixed(
@@ -87,10 +96,14 @@ export default function Dashboard({ socket, connected, operator }) {
       }
 
       setLogs((prev) => [...newLogs, ...prev].slice(0, 50))
-    })
+    }
+
+    socket.on('telemetry', handleTelemetry)
 
     return () => {
-      socket.off('telemetry')
+      console.log('📊 Stopping telemetry stream...')
+      socket.off('telemetry', handleTelemetry)
+      socket.emit('telemetry:stop')
     }
   }, [socket, batteryThreshold, signalThreshold])
 

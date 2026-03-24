@@ -1,85 +1,183 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-export default function LoginPage({ onLogin }) {
-  const [operator, setOperator] = useState('')
-  const [password, setPassword] = useState('')
+export default function LoginPage({ setIsLoggedIn }) {
+  const [operatorName, setOperatorName] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
 
-  function handleSubmit(e) {
+  const handleLogin = (e) => {
     e.preventDefault()
-    setError('')
-    setIsLoading(true)
+    
+    if (!operatorName.trim()) {
+      setError('Please enter operator name')
+      return
+    }
 
-    // Simulate server authentication delay
+    if (operatorName.trim().length < 2) {
+      setError('Operator name must be at least 2 characters')
+      return
+    }
+
+    // Simulate loading
+    setIsLoading(true)
     setTimeout(() => {
-      // Demo: hardcoded username/password
-      if (operator === 'admin' && password === 'mission123') {
-        onLogin(operator)
-        // Navigate to intro/home page after successful login
-        navigate('/intro', { replace: true })
-      } else {
-        setError('Invalid credentials. Try again!')
-        setIsLoading(false)
-      }
-    }, 600)
+      // Call the setIsLoggedIn function passed from App
+      setIsLoggedIn(operatorName.trim())
+      setIsLoading(false)
+      // Navigation is handled in App.jsx
+    }, 500)
   }
 
   return (
-    <div className="w-full h-screen bg-gradient-to-br from-slate-950 via-cyan-900 to-emerald-900 flex items-center justify-center overflow-hidden relative">
-      {/* Animated background orbs */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animation: 'float 6s ease-in-out infinite' }}></div>
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" style={{ animation: 'float 8s ease-in-out infinite reverse' }}></div>
-
-      {/* Grid background */}
-      <div className="absolute inset-0 opacity-10">
-        <div style={{
-          backgroundImage: 'linear-gradient(0deg, transparent 24%, rgba(34, 211, 238, 0.1) 25%, rgba(34, 211, 238, 0.1) 26%, transparent 27%, transparent 74%, rgba(34, 211, 238, 0.1) 75%, rgba(34, 211, 238, 0.1) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(34, 211, 238, 0.1) 25%, rgba(34, 211, 238, 0.1) 26%, transparent 27%, transparent 74%, rgba(34, 211, 238, 0.1) 75%, rgba(34, 211, 238, 0.1) 76%, transparent 77%, transparent)',
-          backgroundSize: '50px 50px',
-          animation: 'gridShift 20s linear infinite'
-        }} className="w-full h-full"></div>
+    <div className="w-full min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-4 py-8">
+      {/* Animated background gradient */}
+      <div className="fixed inset-0 opacity-30 pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
       </div>
 
-      {/* Picture-in-Picture Screens */}
-      {/* Top-right screen */}
-      <div className="absolute top-8 right-8 w-48 h-32 bg-slate-900/40 border border-cyan-500/30 rounded-lg p-3 backdrop-blur-sm hidden lg:block">
-        <div className="text-cyan-400 text-xs font-mono mb-2">SYS_STATUS</div>
-        <div className="text-green-400 text-xs font-mono space-y-1">
-          <div>▸ Init sequence...</div>
-          <div>▸ Network: <span className="text-emerald-400">OK</span></div>
-          <div>▸ Auth: <span className="text-yellow-400">PENDING</span></div>
-          <div>▸ Memory: <span className="text-cyan-400">256MB</span></div>
+      {/* Login Container */}
+      <div className="relative w-full max-w-md animate-slide-up">
+        {/* Main Card */}
+        <div className="bg-gradient-to-br from-slate-900/90 to-slate-800/90 border border-cyan-500/30 backdrop-blur-xl rounded-2xl p-8 shadow-2xl shadow-cyan-500/20">
+          {/* Logo Section */}
+          <div className="text-center mb-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gradient-to-br from-cyan-400 to-emerald-400 shadow-lg shadow-cyan-500/50 mb-4 animate-pulse">
+              <span className="text-2xl">🤖</span>
+            </div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent mb-2">
+              Mission Control
+            </h1>
+            <p className="text-slate-400 text-sm">Robotics Telemetry System</p>
+          </div>
+
+          {/* Status Badge */}
+          <div className="mb-6 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+            <span className="text-xs font-semibold text-emerald-400">SYSTEM ONLINE</span>
+          </div>
+
+          {/* Login Form */}
+          <form onSubmit={handleLogin} className="space-y-4 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+            {/* Operator Name Input */}
+            <div>
+              <label className="block text-sm font-semibold text-cyan-400 mb-2">
+                👤 Operator Name
+              </label>
+              <input
+                type="text"
+                value={operatorName}
+                onChange={(e) => {
+                  setOperatorName(e.target.value)
+                  setError('')
+                }}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && !isLoading) {
+                    handleLogin(e)
+                  }
+                }}
+                placeholder="Enter your operator name"
+                disabled={isLoading}
+                className="w-full px-4 py-3 bg-slate-800/50 border border-cyan-500/30 rounded-lg text-white placeholder-slate-500 font-medium transition-all duration-300 hover:border-cyan-500/50 focus:outline-none focus:border-cyan-400 focus:shadow-lg focus:shadow-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+              <p className="text-xs text-slate-500 mt-1">e.g., admin, operator, john</p>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 animate-slide-down">
+                <p className="text-red-400 text-sm font-medium">❌ {error}</p>
+              </div>
+            )}
+
+            {/* Login Button */}
+            <button
+              type="submit"
+              disabled={isLoading || !operatorName.trim()}
+              className="w-full px-4 py-3 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white font-bold rounded-lg transition-all duration-300 shadow-lg shadow-cyan-500/30 mt-6 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  Authenticating...
+                </span>
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  🚀 Enter Mission Control
+                </span>
+              )}
+            </button>
+
+            {/* Divider */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-700"></div>
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="px-2 bg-slate-900 text-slate-500">or</span>
+              </div>
+            </div>
+
+            {/* Demo Operators */}
+            <div>
+              <p className="text-xs text-slate-400 mb-2">Quick Login:</p>
+              <div className="grid grid-cols-3 gap-2">
+                {['admin', 'operator', 'demo'].map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => {
+                      setOperatorName(name)
+                      setError('')
+                    }}
+                    className="px-3 py-2 text-xs font-semibold bg-slate-800/50 border border-cyan-500/20 hover:border-cyan-500/50 text-cyan-400 rounded-lg transition-all hover:bg-cyan-500/10"
+                  >
+                    {name.charAt(0).toUpperCase() + name.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </form>
+
+          {/* Info Section */}
+          <div className="mt-6 p-4 rounded-lg bg-slate-800/50 border border-cyan-500/20 animate-fade-in" style={{ animationDelay: '0.4s' }}>
+            <p className="text-sm text-slate-400">
+              <span className="text-cyan-400 font-semibold">💡 Demo Tip:</span> Click quick login buttons or enter any name to access the mission control dashboard.
+            </p>
+          </div>
+
+          {/* Features List */}
+          <div className="mt-6 space-y-2 animate-fade-in" style={{ animationDelay: '0.5s' }}>
+            <p className="text-xs text-slate-500 font-semibold mb-3">Available Features:</p>
+            <div className="space-y-2">
+              {[
+                { icon: '📍', label: 'Real-time GPS Tracking' },
+                { icon: '🔋', label: 'Battery Monitoring' },
+                { icon: '📶', label: 'Signal Strength' },
+                { icon: '⚙️', label: 'System Settings' },
+              ].map((feature, idx) => (
+                <div key={idx} className="flex items-center gap-2 text-xs text-slate-400">
+                  <span>{feature.icon}</span>
+                  <span>{feature.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Bottom-left screen */}
-      <div className="absolute bottom-8 left-8 w-48 h-32 bg-slate-900/40 border border-cyan-500/30 rounded-lg p-3 backdrop-blur-sm hidden lg:block">
-        <div className="text-cyan-400 text-xs font-mono mb-2">NET_MONITOR</div>
-        <div className="text-green-400 text-xs font-mono space-y-1">
-          <div>▸ Upload: <span className="text-emerald-400">0.5 Mbps</span></div>
-          <div>▸ Download: <span className="text-emerald-400">2.3 Mbps</span></div>
-          <div>▸ Latency: <span className="text-cyan-400">45ms</span></div>
-          <div>▸ Packets: <span className="text-yellow-400">1024</span></div>
+        {/* Bottom Info */}
+        <div className="mt-6 text-center text-xs text-slate-500 animate-fade-in" style={{ animationDelay: '0.6s' }}>
+          <p>🔒 Secure Mission Control System</p>
         </div>
       </div>
 
       <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(30px); }
-        }
-
-        @keyframes gridShift {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(50px); }
-        }
-
-        @keyframes fadeInDown {
+        @keyframes fadeIn {
           from {
             opacity: 0;
-            transform: translateY(-30px);
+            transform: translateY(10px);
           }
           to {
             opacity: 1;
@@ -87,10 +185,10 @@ export default function LoginPage({ onLogin }) {
           }
         }
 
-        @keyframes slideInUp {
+        @keyframes slideUp {
           from {
             opacity: 0;
-            transform: translateY(20px);
+            transform: translateY(30px);
           }
           to {
             opacity: 1;
@@ -98,172 +196,51 @@ export default function LoginPage({ onLogin }) {
           }
         }
 
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-5px); }
-          75% { transform: translateX(5px); }
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
-        @keyframes scan {
-          0%, 100% { transform: translateY(-100%); opacity: 0; }
-          50% { opacity: 0.5; }
+        @keyframes blob {
+          0%, 100% {
+            transform: translate(0, 0) scale(1);
+          }
+          33% {
+            transform: translate(30px, -50px) scale(1.1);
+          }
+          66% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
         }
 
-        @keyframes buttonPulse {
-          0%, 100% { box-shadow: 0 0 15px rgba(34, 211, 238, 0.5), 0 0 30px rgba(16, 185, 129, 0.3); }
-          50% { box-shadow: 0 0 25px rgba(34, 211, 238, 0.8), 0 0 40px rgba(16, 185, 129, 0.6); }
+        .animate-fade-in {
+          animation: fadeIn 0.6s ease-out forwards;
+          opacity: 0;
         }
 
-        .login-container {
-          animation: fadeInDown 0.8s ease-out;
+        .animate-slide-up {
+          animation: slideUp 0.6s ease-out forwards;
+          opacity: 0;
         }
 
-        .login-header {
-          animation: fadeInDown 1s ease-out;
+        .animate-slide-down {
+          animation: slideDown 0.4s ease-out forwards;
         }
 
-        .login-form {
-          animation: slideInUp 1s ease-out 0.2s both;
+        .animate-blob {
+          animation: blob 7s infinite;
         }
 
-        .input-field {
-          transition: all 0.3s ease;
-        }
-
-        .input-field:focus {
-          border-color: rgba(34, 211, 238, 0.8);
-          box-shadow: 0 0 20px rgba(34, 211, 238, 0.4), inset 0 0 10px rgba(34, 211, 238, 0.1);
-        }
-
-        .input-field:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .login-button {
-          position: relative;
-          overflow: hidden;
-          transition: all 0.3s ease;
-        }
-
-        .login-button::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-          transition: left 0.5s ease;
-        }
-
-        .login-button:hover:not(:disabled)::before {
-          left: 100%;
-        }
-
-        .login-button:hover:not(:disabled) {
-          transform: scale(1.05);
-          animation: buttonPulse 1.5s ease-in-out infinite;
-        }
-
-        .login-button:active:not(:disabled) {
-          transform: scale(0.98);
-        }
-
-        .login-button:disabled {
-          opacity: 0.8;
-          cursor: wait;
-          animation: buttonPulse 1s ease-in-out infinite;
-        }
-
-        .error-message {
-          animation: shake 0.5s ease-in-out;
-        }
-
-        .scan-line {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 2px;
-          background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.8), transparent);
-          animation: scan 3s ease-in-out infinite;
-          pointer-events: none;
-        }
-
-        .demo-text {
-          animation: slideInUp 1s ease-out 0.4s both;
-        }
-
-        .robot-icon {
-          animation: fadeInDown 1.2s ease-out;
-          filter: drop-shadow(0 0 15px rgba(34, 211, 238, 0.5));
+        .animation-delay-2000 {
+          animation-delay: 2s;
         }
       `}</style>
-
-      <div className="login-container backdrop-blur-xl bg-slate-900/70 border border-cyan-500/40 shadow-2xl rounded-2xl p-10 w-full max-w-md flex flex-col items-center relative overflow-hidden z-10">
-        <div className="scan-line"></div>
-
-        <div className="login-header mb-8 flex flex-col items-center">
-          <div className="robot-icon w-20 h-20 rounded-full bg-gradient-to-br from-cyan-400 to-emerald-400 flex items-center justify-center shadow-xl mb-4 border-2 border-cyan-300/50">
-            <span className="text-4xl font-bold">🤖</span>
-          </div>
-          <h1 className="text-3xl font-black bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent mb-2">MISSION CONTROL</h1>
-          <p className="text-slate-400 text-sm tracking-widest uppercase">Operator Authentication System</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="login-form w-full flex flex-col gap-5">
-          <div className="relative">
-            <input
-              className="input-field w-full px-5 py-3 bg-slate-800/60 text-cyan-300 rounded-lg border-2 border-cyan-500/30 focus:border-cyan-400 outline-none placeholder-slate-500 font-mono text-sm"
-              placeholder="USERNAME"
-              autoFocus
-              value={operator}
-              onChange={e => setOperator(e.target.value)}
-              disabled={isLoading}
-            />
-            <div className="absolute right-3 top-3 text-cyan-400/50">▸</div>
-          </div>
-
-          <div className="relative">
-            <input
-              className="input-field w-full px-5 py-3 bg-slate-800/60 text-cyan-300 rounded-lg border-2 border-cyan-500/30 focus:border-cyan-400 outline-none placeholder-slate-500 font-mono text-sm"
-              placeholder="PASSWORD"
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              disabled={isLoading}
-            />
-            <div className="absolute right-3 top-3 text-cyan-400/50">▸</div>
-          </div>
-
-          <button
-            className={`login-button px-8 py-3 mt-4 bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 rounded-lg font-bold text-lg uppercase tracking-wide shadow-lg hover:shadow-2xl transition-all duration-300 disabled:opacity-75`}
-            type="submit"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="animate-spin">⟳</span> Authenticating...
-              </span>
-            ) : (
-              'LOGIN'
-            )}
-          </button>
-        </form>
-
-        {error && (
-          <div className="error-message text-red-400 text-sm mt-5 p-3 bg-red-500/10 border border-red-500/30 rounded-lg w-full text-center font-mono">
-            ✗ {error}
-          </div>
-        )}
-
-        <div className="demo-text text-slate-400 text-xs mt-6 p-4 bg-slate-800/40 rounded-lg w-full text-center border border-slate-700/50 font-mono">
-          <div className="mb-2 text-cyan-400 font-bold">DEMO CREDENTIALS</div>
-          <div>Username: <span className="text-emerald-400">admin</span></div>
-          <div>Password: <span className="text-emerald-400">mission123</span></div>
-        </div>
-      </div>
     </div>
   )
 }

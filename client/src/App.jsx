@@ -1,119 +1,170 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import io from 'socket.io-client'
-
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { SettingsProvider, useSettings } from './context/SettingsContext'
 import Sidebar from './components/Sidebar'
-import IntroPage from './pages/IntroPage'
 import Dashboard from './pages/Dashboard'
 import SettingsPage from './pages/SettingsPage'
 import LoginPage from './pages/LoginPage'
+import IntroPage from './pages/IntroPage'
 
-function App() {
-  const [socket, setSocket] = useState(null)
-  const [connected, setConnected] = useState(false)
-  const [operator, setOperator] = useState(() => {
-    // Restore login state from localStorage on app load
-    const savedOperator = localStorage.getItem('operator')
-    return savedOperator ? JSON.parse(savedOperator) : null
-  })
-  const [isLoading, setIsLoading] = useState(true)
+// Component to apply settings globally
+function AppContent({ socket, connected: initialConnected, operator: initialOperator }) {
+  const { accentColor, animationSpeed, darkMode } = useSettings()
+  const navigate = useNavigate()
+  const [currentPage, setCurrentPage] = useState('dashboard')
+  const [operator, setOperator] = useState(initialOperator)
+  const [isLoggedIn, setIsLoggedIn] = useState(!!initialOperator)
+  const [connected, setConnected] = useState(initialConnected || false)
 
+  // Apply accent color and animation speed to document
   useEffect(() => {
-    // Connect to backend WebSocket
-    const newSocket = io('http://localhost:3001', {
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5
-    })
-
-    newSocket.on('connect', () => {
-      setConnected(true)
-      console.log('✓ Connected to telemetry server')
-    })
-
-    newSocket.on('disconnect', () => {
-      setConnected(false)
-      console.log('✗ Disconnected from server')
-    })
-
-    newSocket.on('error', (error) => {
-      console.error('Socket error:', error)
-    })
-
-    setSocket(newSocket)
-    setIsLoading(false)
-
-    return () => {
-      newSocket.close()
+    const colorMap = {
+      cyan: { 
+        primary: '#22d3ee', 
+        secondary: '#06b6d4', 
+        rgb: '34, 211, 238',
+        light: '#cffafe'
+      },
+      purple: { 
+        primary: '#a855f7', 
+        secondary: '#9333ea', 
+        rgb: '168, 85, 247',
+        light: '#f3e8ff'
+      },
+      pink: { 
+        primary: '#ec4899', 
+        secondary: '#db2777', 
+        rgb: '236, 72, 153',
+        light: '#fce7f3'
+      },
+      blue: { 
+        primary: '#3b82f6', 
+        secondary: '#2563eb', 
+        rgb: '59, 130, 246',
+        light: '#dbeafe'
+      },
     }
-  }, [])
 
-  // Authentication handlers
-  function handleLogin(user) {
-    setOperator(user)
-    // Save to localStorage to persist login
-    localStorage.setItem('operator', JSON.stringify(user))
+    const colors = colorMap[accentColor] || colorMap.cyan
+
+    // Set CSS variables
+    document.documentElement.style.setProperty('--color-accent', colors.primary)
+    document.documentElement.style.setProperty('--color-accent-dark', colors.secondary)
+    document.documentElement.style.setProperty('--color-accent-rgb', colors.rgb)
+    document.documentElement.style.setProperty('--color-accent-light', colors.light)
+
+    // Apply to body for dark mode
+    if (darkMode) {
+      document.body.style.backgroundColor = '#0f172a'
+    } else {
+      document.body.style.backgroundColor = '#ffffff'
+    }
+
+    // Apply animation speed
+    const animationMap = {
+      fast: '0.3s',
+      normal: '0.6s',
+      slow: '1.0s',
+    }
+    document.documentElement.style.setProperty('--animation-speed', animationMap[animationSpeed] || '0.6s')
+  }, [accentColor, darkMode, animationSpeed])
+
+  // Monitor socket connection
+  useEffect(() => {
+    if (!socket) {
+      setConnected(false)
+      return
+    }
+
+    const handleConnect = () => {
+      console.log('✅ Socket connected')
+      setConnected(true)
+    }
+
+    const handleDisconnect = () => {
+      console.log('❌ Socket disconnected')
+      setConnected(false)
+    }
+
+    const handleError = (error) => {
+      console.error('🔴 Socket error:', error)
+      setConnected(false)
+    }
+
+    // Add event listeners
+    socket.on('connect', handleConnect)
+    socket.on('disconnect', handleDisconnect)
+    socket.on('error', handleError)
+
+    // Check initial connection status
+    if (socket.connected) {
+      setConnected(true)
+    }
+
+    // Cleanup
+    return () => {
+      socket.off('connect', handleConnect)
+      socket.off('disconnect', handleDisconnect)
+      socket.off('error', handleError)
+    }
+  }, [socket])
+
+  // Handle login
+  const handleLogin = (operatorName) => {
+    setOperator(operatorName)
+    setIsLoggedIn(true)
+    localStorage.setItem('operator', operatorName)
+    setCurrentPage('dashboard')
   }
 
-  function handleLogout() {
+  // Handle logout
+  const handleLogout = () => {
     setOperator(null)
-    // Clear from localStorage on logout
+    setIsLoggedIn(false)
+    setCurrentPage('dashboard')
     localStorage.removeItem('operator')
   }
 
-  // Show loading state while initializing
-  if (isLoading) {
+  if (!isLoggedIn) {
     return (
-      <div className="w-full h-screen bg-gradient-to-br from-slate-950 via-cyan-900 to-emerald-900 flex items-center justify-center">
-        <div className="text-cyan-400 font-mono text-lg">Initializing System...</div>
-      </div>
+      <Routes>
+        <Route path="/" element={<IntroPage />} />
+        <Route 
+          path="/login" 
+          element={<LoginPage setIsLoggedIn={handleLogin} />} 
+        />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
     )
   }
 
   return (
-    <Router>
-      <div className="flex h-screen bg-slate-950">
-        {/* Sidebar only after login */}
-        {operator && <Sidebar connected={connected} operator={operator} onLogout={handleLogout} />}
-
-        {/* Main Content */}
-        <div className="flex-1 overflow-hidden">
-          <Routes>
-            {/* Login page is the default route */}
-            <Route path="/login" element={
-              operator ? <Navigate to="/intro" /> : <LoginPage onLogin={handleLogin} />
-            } />
-            
-            {/* Home/Intro page (protected - requires login) */}
-            <Route path="/intro" element={
-              operator
-                ? <IntroPage />
-                : <Navigate to="/login" />
-            } />
-
-            {/* Dashboard page (protected) */}
-            <Route path="/dashboard" element={
-              operator
-                ? <Dashboard socket={socket} connected={connected} operator={operator} />
-                : <Navigate to="/login" />
-            } />
-
-            {/* Settings page (protected) */}
-            <Route path="/settings" element={
-              operator
-                ? <SettingsPage operator={operator} />
-                : <Navigate to="/login" />
-            } />
-
-            {/* Redirect all other routes */}
-            <Route path="/" element={<Navigate to={operator ? "/intro" : "/login"} />} />
-            <Route path="*" element={<Navigate to={operator ? "/intro" : "/login"} />} />
-          </Routes>
-        </div>
+    <div style={{ display: 'flex', height: '100vh', width: '100%' }}>
+      <Sidebar 
+        currentPage={currentPage} 
+        setCurrentPage={setCurrentPage}
+        operator={operator}
+        onLogout={handleLogout}
+        connected={connected}
+      />
+      <div style={{ flex: 1, overflow: 'hidden', width: '100%' }}>
+        {currentPage === 'dashboard' && (
+          <Dashboard socket={socket} connected={connected} operator={operator} />
+        )}
+        {currentPage === 'settings' && (
+          <SettingsPage operator={operator} />
+        )}
       </div>
-    </Router>
+    </div>
   )
 }
 
-export default App
+export default function App({ socket, connected, operator }) {
+  return (
+    <SettingsProvider>
+      <Router>
+        <AppContent socket={socket} connected={connected} operator={operator} />
+      </Router>
+    </SettingsProvider>
+  )
+}

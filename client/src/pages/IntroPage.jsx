@@ -1,236 +1,298 @@
-import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Zap, Radio, Wifi } from 'lucide-react'
 
 export default function IntroPage() {
   const navigate = useNavigate()
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
 
-  // Track mouse position for animated background effect
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      setMousePosition({ x: e.clientX, y: e.clientY })
-    }
-
-    window.addEventListener('mousemove', handleMouseMove)
-    return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [])
+  const features = [
+    {
+      icon: '📍',
+      title: 'Real-time Tracking',
+      description: 'GPS location tracking with precision mapping',
+    },
+    {
+      icon: '🔋',
+      title: 'Battery Monitoring',
+      description: 'Track battery voltage with smart alerts',
+    },
+    {
+      icon: '📶',
+      title: 'Signal Management',
+      description: 'Monitor signal strength and connection quality',
+    },
+    {
+      icon: '📊',
+      title: 'Data Visualization',
+      description: 'Advanced charts and real-time telemetry',
+    },
+    {
+      icon: '🎮',
+      title: 'Remote Control',
+      description: 'Send commands and control operations',
+    },
+    {
+      icon: '⚙️',
+      title: 'System Settings',
+      description: 'Customize theme, animations, and preferences',
+    },
+  ]
 
   return (
-    <div className="w-full h-screen bg-slate-950 overflow-hidden relative">
-      {/* Animated Grid Background */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute inset-0 grid-bg"></div>
+    <div className="w-full min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 overflow-hidden">
+      {/* Animated background gradient */}
+      <div className="fixed inset-0 opacity-30 pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
+        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-1000"></div>
       </div>
 
-      {/* Animated Light Effect Following Mouse */}
-      <div
-        className="absolute w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"
-        style={{
-          left: mousePosition.x - 192,
-          top: mousePosition.y - 192,
-          transition: 'all 0.3s ease-out',
-        }}
-      ></div>
-
-      {/* Floating Particles Background */}
-      <div className="absolute inset-0 overflow-hidden">
-        {[...Array(30)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-1 h-1 bg-cyan-400 rounded-full opacity-30"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animation: `float ${3 + Math.random() * 4}s ease-in-out infinite`,
-              animationDelay: `${Math.random() * 2}s`,
-            }}
-          ></div>
-        ))}
-      </div>
-
-      {/* Main Content Container */}
-      <div className="relative z-10 h-full flex items-center justify-between px-12">
-        {/* Left Section - Text Content */}
-        <div className="flex-1 max-w-2xl">
-          {/* Logo */}
-          <div className="flex items-center gap-3 mb-12">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 to-emerald-400 flex items-center justify-center transform hover:scale-110 transition-transform">
-              <span className="text-slate-950 font-bold text-xl">🌍</span>
+      {/* Navigation */}
+      <nav className="relative z-10 border-b border-cyan-500/20 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-400 to-emerald-400 flex items-center justify-center shadow-lg shadow-cyan-500/50">
+              <span className="text-lg">🤖</span>
             </div>
-            <span className="text-cyan-400 font-bold text-lg tracking-wider">Lora</span>
+            <div>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+                Mission Control
+              </h1>
+              <p className="text-xs text-slate-500">Robotics Telemetry System</p>
+            </div>
+          </div>
+          <a href="#features" className="text-sm text-slate-400 hover:text-cyan-400 transition-colors">
+            Learn More ↓
+          </a>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          {/* Left Content */}
+          <div className="space-y-8 animate-slide-up">
+            {/* Status Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 w-fit">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+              <span className="text-xs font-semibold text-emerald-400">SYSTEM OPERATIONAL</span>
+            </div>
+
+            {/* Main Heading */}
+            <div>
+              <h2 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-cyan-400 via-emerald-400 to-cyan-400 bg-clip-text text-transparent mb-4 leading-tight">
+                Advanced Robotics Control & Monitoring
+              </h2>
+              <p className="text-xl text-slate-300">
+                Real-time telemetry, tracking, and remote control for autonomous robots
+              </p>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-3 text-slate-400">
+              <p>
+                Monitor your robot's position, battery status, signal strength, and orientation in real-time. 
+                Access comprehensive dashboards with live charts and detailed analytics.
+              </p>
+              <p>
+                Get instant alerts for critical events, export mission data, and customize your experience 
+                with our advanced settings system.
+              </p>
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-wrap gap-4 pt-4">
+              <button
+                onClick={() => navigate('/login')}
+                className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white font-bold rounded-xl transition-all duration-300 shadow-lg shadow-cyan-500/50 transform hover:scale-105 hover:-translate-y-1"
+              >
+                🚀 Enter Mission Control
+              </button>
+              <button
+                onClick={() => document.getElementById('features').scrollIntoView({ behavior: 'smooth' })}
+                className="px-8 py-4 bg-slate-800/50 hover:bg-slate-800 border border-cyan-500/30 text-cyan-400 font-bold rounded-xl transition-all duration-300"
+              >
+                📚 Learn More
+              </button>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-4 pt-8 border-t border-cyan-500/20">
+              {[
+                { label: 'Real-time Updates', value: '<100ms' },
+                { label: 'Data Points', value: '∞' },
+                { label: 'Uptime', value: '99.9%' },
+              ].map((stat, idx) => (
+                <div key={idx} className="animate-fade-in" style={{ animationDelay: `${0.3 + idx * 0.1}s` }}>
+                  <p className="text-2xl font-bold text-cyan-400">{stat.value}</p>
+                  <p className="text-xs text-slate-500">{stat.label}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Main Heading */}
-          <h1 className="text-6xl font-bold text-white mb-6 leading-tight">
-            ROBOT TELEMETRY
-          </h1>
+          {/* Right Visual */}
+          <div className="relative hidden md:block animate-float">
+            <div className="relative w-full aspect-square">
+              {/* Animated Border */}
+              <div className="absolute inset-0 rounded-2xl border-2 border-cyan-500/30 animate-pulse"></div>
+              
+              {/* Main Visual Card */}
+              <div className="absolute inset-4 bg-gradient-to-br from-cyan-500/10 to-emerald-500/10 border border-cyan-500/20 rounded-xl backdrop-blur-sm flex items-center justify-center">
+                <div className="text-center space-y-4">
+                  <div className="text-6xl">📊</div>
+                  <p className="text-cyan-400 font-bold">Mission Control</p>
+                  <p className="text-sm text-slate-400">Real-time Telemetry Dashboard</p>
+                  
+                  {/* Mini Stats */}
+                  <div className="grid grid-cols-2 gap-2 pt-4 text-xs">
+                    <div className="p-2 bg-slate-800/50 rounded border border-cyan-500/20">
+                      <p className="text-cyan-400 font-bold">📍 GPS</p>
+                      <p className="text-slate-500">Live Tracking</p>
+                    </div>
+                    <div className="p-2 bg-slate-800/50 rounded border border-emerald-500/20">
+                      <p className="text-emerald-400 font-bold">🔋 Battery</p>
+                      <p className="text-slate-500">12.5V</p>
+                    </div>
+                    <div className="p-2 bg-slate-800/50 rounded border border-blue-500/20">
+                      <p className="text-blue-400 font-bold">📶 Signal</p>
+                      <p className="text-slate-500">-75dBm</p>
+                    </div>
+                    <div className="p-2 bg-slate-800/50 rounded border border-purple-500/20">
+                      <p className="text-purple-400 font-bold">⚙️ Status</p>
+                      <p className="text-slate-500">Online</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-          {/* Subheadings */}
-          <h2 className="text-3xl text-cyan-400 font-bold mb-2">
-            MISSION CONTROL SYSTEM
-          </h2>
-          <h3 className="text-2xl text-emerald-400 font-bold mb-8">
-            ADVANCED TELEMETRY
+              {/* Floating Elements */}
+              <div className="absolute -top-4 -right-4 w-20 h-20 bg-cyan-500/20 rounded-full blur-xl animate-blob"></div>
+              <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-emerald-500/20 rounded-full blur-xl animate-blob animation-delay-1000"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Features Section */}
+      <div id="features" className="relative z-10 border-t border-cyan-500/20 bg-gradient-to-b from-transparent to-slate-900/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="text-center mb-16 animate-fade-in">
+            <h3 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              Powerful Features
+            </h3>
+            <p className="text-slate-400">Everything you need for advanced robot control and monitoring</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {features.map((feature, idx) => (
+              <div
+                key={idx}
+                className="p-6 rounded-xl bg-slate-900/50 border border-cyan-500/20 hover:border-cyan-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/10 transform hover:-translate-y-2 animate-slide-up"
+                style={{ animationDelay: `${0.2 + idx * 0.1}s` }}
+              >
+                <div className="text-4xl mb-4">{feature.icon}</div>
+                <h4 className="text-lg font-bold text-cyan-400 mb-2">{feature.title}</h4>
+                <p className="text-sm text-slate-400">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* CTA Section */}
+      <div className="relative z-10 border-t border-cyan-500/20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+          <h3 className="text-2xl md:text-3xl font-bold text-white mb-4 animate-fade-in">
+            Ready to Control Your Robot?
           </h3>
-
-          {/* Description */}
-          <p className="text-slate-300 text-lg mb-8 leading-relaxed">
-            Real-time monitoring and control for LoRa-based long-range autonomous robots with
-            advanced telemetry visualization, 3D orientation tracking and mission analytics.
+          <p className="text-slate-400 mb-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            Start monitoring and controlling your autonomous robot with advanced telemetry
           </p>
-
-          {/* Tech Stack */}
-          <div className="mb-12 space-y-3">
-            <div className="flex items-center gap-3">
-              <Zap size={20} className="text-cyan-400" />
-              <span className="text-slate-300">React 18</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <Radio size={20} className="text-cyan-400" />
-              <span className="text-slate-300">Three.js</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <Wifi size={20} className="text-cyan-400" />
-              <span className="text-slate-300">WebSocket</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <Zap size={20} className="text-cyan-400" />
-              <span className="text-slate-300">Node.js</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <Radio size={20} className="text-cyan-400" />
-              <span className="text-slate-300">Real-time</span>
-            </div>
-          </div>
-
-          {/* Status Badge */}
-          <div className="mb-12 flex items-center gap-2">
-            <div className="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></div>
-            <span className="text-emerald-400 font-bold tracking-wider">SYSTEM READY</span>
-          </div>
-
-          {/* CTA Button */}
           <button
-            onClick={() => navigate('/dashboard')}
-            className="px-12 py-4 border-2 border-cyan-400 text-cyan-400 font-bold tracking-wider text-lg rounded-full hover:bg-cyan-400 hover:text-slate-950 transition-all duration-300 shadow-neon-cyan hover:shadow-lg transform hover:scale-105 relative overflow-hidden group"
+            onClick={() => navigate('/login')}
+            className="px-10 py-4 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white font-bold text-lg rounded-xl transition-all duration-300 shadow-lg shadow-cyan-500/50 transform hover:scale-105 animate-fade-in"
+            style={{ animationDelay: '0.2s' }}
           >
-            <span className="relative z-10">ENTER MISSION CONTROL</span>
-            <div className="absolute inset-0 bg-cyan-400 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300"></div>
+            🚀 Launch Mission Control
           </button>
-
-          {/* Connection Info */}
-          <p className="text-slate-400 text-sm mt-6">
-            Connect to Mission Control<br />
-            <span className="text-cyan-400 font-mono">localhost:3001</span> • Real-time Streaming
-          </p>
-        </div>
-
-        {/* Right Section - Robot Visualization */}
-        <div className="flex-1 flex items-center justify-center">
-          {/* Robot 3D Visualization (SVG) */}
-          <div className="relative w-full h-full flex items-center justify-center">
-            {/* Orbiting Circle */}
-            <div className="absolute w-96 h-96 border border-cyan-500/20 rounded-full animate-spin" style={{ animationDuration: '20s', animationDirection: 'reverse' }}></div>
-            <div className="absolute w-80 h-80 border border-emerald-500/10 rounded-full animate-spin" style={{ animationDuration: '15s' }}></div>
-
-            {/* Robot SVG */}
-            <svg
-              viewBox="0 0 300 250"
-              className="w-96 h-96 relative z-10 drop-shadow-2xl"
-              style={{
-                filter: 'drop-shadow(0 0 30px rgba(34, 211, 238, 0.3))',
-              }}
-            >
-              {/* Main Robot Body */}
-              <g className="animate-bounce" style={{ animationDuration: '3s' }}>
-                {/* Chassis */}
-                <rect x="80" y="120" width="140" height="80" rx="10" fill="url(#chassis-gradient)" stroke="#22d3ee" strokeWidth="2" opacity="0.9" />
-
-                {/* Main Hull */}
-                <ellipse cx="150" cy="130" rx="65" ry="40" fill="url(#hull-gradient)" stroke="#22d3ee" strokeWidth="2" opacity="0.8" />
-
-                {/* Top Dome */}
-                <circle cx="150" cy="100" r="35" fill="url(#dome-gradient)" stroke="#22d3ee" strokeWidth="2" opacity="0.85" />
-
-                {/* Antenna */}
-                <line x1="150" y1="60" x2="150" y2="20" stroke="#22d3ee" strokeWidth="3" opacity="0.7" />
-                <circle cx="150" cy="15" r="6" fill="#22d3ee" opacity="0.8" />
-
-                {/* Antenna Rings */}
-                <circle cx="150" cy="45" r="12" fill="none" stroke="#22d3ee" strokeWidth="1" opacity="0.4" />
-                <circle cx="150" cy="45" r="18" fill="none" stroke="#22d3ee" strokeWidth="1" opacity="0.2" />
-
-                {/* Wheels - Left */}
-                <circle cx="100" cy="200" r="18" fill="url(#wheel-gradient)" stroke="#22d3ee" strokeWidth="2" opacity="0.9" />
-                <circle cx="100" cy="200" r="12" fill="none" stroke="#22d3ee" strokeWidth="1" opacity="0.5" />
-
-                {/* Wheels - Right */}
-                <circle cx="200" cy="200" r="18" fill="url(#wheel-gradient)" stroke="#22d3ee" strokeWidth="2" opacity="0.9" />
-                <circle cx="200" cy="200" r="12" fill="none" stroke="#22d3ee" strokeWidth="1" opacity="0.5" />
-
-                {/* Wheels - Back */}
-                <circle cx="120" cy="220" r="15" fill="url(#wheel-gradient)" stroke="#22d3ee" strokeWidth="2" opacity="0.85" />
-                <circle cx="180" cy="220" r="15" fill="url(#wheel-gradient)" stroke="#22d3ee" strokeWidth="2" opacity="0.85" />
-
-                {/* Sensor Window */}
-                <rect x="135" y="110" width="30" height="25" rx="5" fill="#06b6d4" opacity="0.3" stroke="#22d3ee" strokeWidth="1" />
-
-                {/* LED Indicators */}
-                <circle cx="145" cy="135" r="3" fill="#34d399" opacity="0.8" />
-                <circle cx="155" cy="135" r="3" fill="#22d3ee" opacity="0.8" />
-              </g>
-
-              {/* Gradients */}
-              <defs>
-                <linearGradient id="chassis-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style={{ stopColor: '#22d3ee', stopOpacity: 0.3 }} />
-                  <stop offset="100%" style={{ stopColor: '#06b6d4', stopOpacity: 0.5 }} />
-                </linearGradient>
-                <linearGradient id="hull-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style={{ stopColor: '#34d399', stopOpacity: 0.4 }} />
-                  <stop offset="100%" style={{ stopColor: '#22d3ee', stopOpacity: 0.3 }} />
-                </linearGradient>
-                <linearGradient id="dome-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style={{ stopColor: '#22d3ee', stopOpacity: 0.5 }} />
-                  <stop offset="100%" style={{ stopColor: '#06b6d4', stopOpacity: 0.2 }} />
-                </linearGradient>
-                <linearGradient id="wheel-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style={{ stopColor: '#64748b', stopOpacity: 0.6 }} />
-                  <stop offset="100%" style={{ stopColor: '#475569', stopOpacity: 0.4 }} />
-                </linearGradient>
-              </defs>
-            </svg>
-
-            {/* Glow Effect Behind Robot */}
-            <div className="absolute w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl"></div>
-          </div>
         </div>
       </div>
 
-      {/* Bottom Accent Line */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
+      {/* Footer */}
+      <footer className="relative z-10 border-t border-cyan-500/20 bg-slate-900/50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-slate-500 text-sm">
+          <p>🤖 Mission Control • Advanced Robotics Telemetry System</p>
+          <p className="mt-2">© 2026 All Rights Reserved</p>
+        </div>
+      </footer>
 
-      {/* CSS Animations */}
       <style>{`
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0px);
-            opacity: 0.3;
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
           }
-          50% {
-            transform: translateY(-20px);
-            opacity: 0.6;
+          to {
+            opacity: 1;
+            transform: translateY(0);
           }
         }
 
-        @keyframes spin {
+        @keyframes slideUp {
           from {
-            transform: rotate(0deg);
+            opacity: 0;
+            transform: translateY(30px);
           }
           to {
-            transform: rotate(360deg);
+            opacity: 1;
+            transform: translateY(0);
           }
+        }
+
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-20px);
+          }
+        }
+
+        @keyframes blob {
+          0%, 100% {
+            transform: translate(0, 0) scale(1);
+          }
+          33% {
+            transform: translate(30px, -50px) scale(1.1);
+          }
+          66% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+        }
+
+        .animate-fade-in {
+          animation: fadeIn 0.6s ease-out forwards;
+          opacity: 0;
+        }
+
+        .animate-slide-up {
+          animation: slideUp 0.6s ease-out forwards;
+          opacity: 0;
+        }
+
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
+
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+
+        .animation-delay-1000 {
+          animation-delay: 1s;
+        }
+
+        .animation-delay-2000 {
+          animation-delay: 2s;
         }
       `}</style>
     </div>
