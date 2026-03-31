@@ -16,6 +16,9 @@ function AppContent({ socket, connected: initialConnected, operator: initialOper
   const [isLoggedIn, setIsLoggedIn] = useState(!!initialOperator)
   const [connected, setConnected] = useState(initialConnected || false)
 
+  // ==================== MODE STATE ====================
+  const [currentMode, setCurrentMode] = useState('MANUAL')
+
   // Apply accent color and animation speed to document
   useEffect(() => {
     const colorMap = {
@@ -109,6 +112,20 @@ function AppContent({ socket, connected: initialConnected, operator: initialOper
     }
   }, [socket])
 
+  // ==================== MODE SWITCHING EVENT (Socket) ====================
+  useEffect(() => {
+    if (!socket) return
+
+    socket.on('mode:switched', (data) => {
+      console.log('📡 Mode switched via socket:', data.mode)
+      setCurrentMode(data.mode)
+    })
+
+    return () => {
+      socket.off('mode:switched')
+    }
+  }, [socket])
+
   // Handle login
   const handleLogin = (operatorName) => {
     setOperator(operatorName)
@@ -146,10 +163,17 @@ function AppContent({ socket, connected: initialConnected, operator: initialOper
         operator={operator}
         onLogout={handleLogout}
         connected={connected}
+        currentMode={currentMode}
       />
       <div style={{ flex: 1, overflow: 'hidden', width: '100%' }}>
         {currentPage === 'dashboard' && (
-          <Dashboard socket={socket} connected={connected} operator={operator} />
+          <Dashboard 
+            socket={socket} 
+            connected={connected} 
+            operator={operator}
+            currentMode={currentMode}
+            setCurrentMode={setCurrentMode}
+          />
         )}
         {currentPage === 'settings' && (
           <SettingsPage operator={operator} />

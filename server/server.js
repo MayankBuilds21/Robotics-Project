@@ -51,10 +51,10 @@ app.use(express.urlencoded({ extended: true }))
 // Store connected clients and their states
 const connectedClients = new Map()
 const robotStates = new Map()
+const modeStates = new Map()
 
 // ==================== REST API Endpoints ====================
 
-// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -63,7 +63,6 @@ app.get('/api/health', (req, res) => {
   })
 })
 
-// Get connection status
 app.get('/api/status', (req, res) => {
   res.json({
     connected: true,
@@ -72,17 +71,16 @@ app.get('/api/status', (req, res) => {
   })
 })
 
-// Get all connected clients
 app.get('/api/clients', (req, res) => {
   const clients = Array.from(connectedClients.values()).map(client => ({
     id: client.id,
     operator: client.operator,
+    mode: modeStates.get(client.id) || 'MANUAL',
     connectedAt: client.connectedAt,
   }))
   res.json(clients)
 })
 
-// Get robot state
 app.get('/api/robot/:id', (req, res) => {
   const state = robotStates.get(req.params.id)
   if (!state) {
@@ -91,26 +89,59 @@ app.get('/api/robot/:id', (req, res) => {
   res.json(state)
 })
 
+app.get('/api/mode/current/:clientId', (req, res) => {
+  const mode = modeStates.get(req.params.clientId) || 'MANUAL'
+  res.json({ mode, timestamp: new Date().toISOString() })
+})
+
+app.post('/api/mode/switch/:clientId/:mode', (req, res) => {
+  const { clientId, mode } = req.params
+  if (!['AI', 'MANUAL'].includes(mode)) {
+    return res.status(400).json({ error: 'Invalid mode' })
+  }
+  
+  modeStates.set(clientId, mode)
+  io.to(clientId).emit('mode:switched', { mode })
+  
+  res.json({ success: true, mode, message: `Switched to ${mode} mode` })
+})
+
 // ==================== Socket.IO Events ====================
 
 io.on('connection', (socket) => {
   console.log('✅ New client connected:', socket.id)
 
-  // Store client info
   const clientInfo = {
     id: socket.id,
     operator: null,
     connectedAt: new Date(),
     lastSeen: new Date(),
+    mode: 'MANUAL',
+    isMoving: false,
   }
   connectedClients.set(socket.id, clientInfo)
+  modeStates.set(socket.id, 'MANUAL')
 
-  // Broadcast connection count to all clients
+  // Initialize robot state with static position
+  const initialRobotState = {
+    lat: 19.0760,
+    lon: 72.8777,
+    battery: 11.5,
+    roll: 0,
+    pitch: 0,
+    yaw: 0,
+    signal: -75,
+    speed: 0,
+    packetLoss: 0,
+    timestamp: new Date().toISOString(),
+    mode: 'MANUAL',
+  }
+  robotStates.set(socket.id, initialRobotState)
+
   io.emit('clientCount', { count: connectedClients.size })
 
   // ==================== Operator Management ====================
 
-  // Operator login event
   socket.on('operator:login', (data) => {
     const { operatorName } = data
     if (!operatorName) {
@@ -123,21 +154,20 @@ io.on('connection', (socket) => {
 
     console.log(`👤 Operator logged in: ${operatorName} (${socket.id})`)
 
-    // Notify all clients
     io.emit('operator:joined', {
       operator: operatorName,
       clientId: socket.id,
+      mode: clientInfo.mode,
       timestamp: new Date().toISOString(),
     })
 
-    // Send confirmation
     socket.emit('operator:loginSuccess', {
       operator: operatorName,
       clientId: socket.id,
+      mode: clientInfo.mode,
     })
   })
 
-  // Operator logout event
   socket.on('operator:logout', () => {
     const operator = clientInfo.operator
     clientInfo.operator = null
@@ -153,9 +183,34 @@ io.on('connection', (socket) => {
     }
   })
 
+  // ==================== MODE EVENTS ====================
+
+  socket.on('mode:switchAI', () => {
+    clientInfo.mode = 'AI'
+    modeStates.set(socket.id, 'AI')
+    console.log(`🤖 AI Mode activated for ${socket.id}`)
+    
+    io.emit('mode:switched', {
+      clientId: socket.id,
+      mode: 'AI',
+      timestamp: new Date().toISOString(),
+    })
+  })
+
+  socket.on('mode:switchManual', () => {
+    clientInfo.mode = 'MANUAL'
+    modeStates.set(socket.id, 'MANUAL')
+    console.log(`🎮 Manual Mode activated for ${socket.id}`)
+    
+    io.emit('mode:switched', {
+      clientId: socket.id,
+      mode: 'MANUAL',
+      timestamp: new Date().toISOString(),
+    })
+  })
+
   // ==================== Telemetry Events ====================
 
-  // Send telemetry data periodically
   let telemetryInterval = null
 
   socket.on('telemetry:start', () => {
@@ -163,42 +218,30 @@ io.on('connection', (socket) => {
       clearInterval(telemetryInterval)
     }
 
-    console.log('📊 Telemetry stream started for:', socket.id)
+    console.log('📊 Telemetry stream started for:', socket.id, `Mode: ${clientInfo.mode}`)
 
-    // Generate random telemetry data
-    const generateTelemetry = () => {
-      const telemetry = {
-        current: {
-          lat: 19.0760 + (Math.random() - 0.5) * 0.02,
-          lon: 72.8777 + (Math.random() - 0.5) * 0.02,
-          battery: 11.5 + (Math.random() - 0.5) * 2,
-          roll: Math.sin(Date.now() / 1000) * 15,
-          pitch: Math.cos(Date.now() / 1000) * 15,
-          yaw: (Date.now() / 100) % 360,
-          signal: -75 + Math.random() * 15,
-          speed: Math.random() * 5,
-          packetLoss: Math.max(0, Math.random() * 10 - 5),
-          timestamp: new Date().toISOString(),
-        },
-        path: [],
-      }
-
-      // Store robot state
-      robotStates.set(socket.id, telemetry.current)
-
-      return telemetry
-    }
-
-    // Send telemetry every 500ms
+    // Send telemetry every 500ms WITHOUT random changes
     telemetryInterval = setInterval(() => {
-      const telemetry = generateTelemetry()
-      socket.emit('telemetry', telemetry)
+      const currentState = robotStates.get(socket.id)
+      
+      if (currentState) {
+        // Only add small signal noise, nothing else changes without command
+        const telemetry = {
+          current: {
+            ...currentState,
+            signal: -75 + Math.random() * 15, // Only signal has slight variation
+            timestamp: new Date().toISOString(),
+            mode: clientInfo.mode,
+          },
+          path: [],
+        }
 
-      // Also broadcast to all connected clients
-      io.emit('telemetry:update', {
-        clientId: socket.id,
-        data: telemetry.current,
-      })
+        socket.emit('telemetry', telemetry)
+        io.emit('telemetry:update', {
+          clientId: socket.id,
+          data: telemetry.current,
+        })
+      }
     }, 500)
   })
 
@@ -212,52 +255,92 @@ io.on('connection', (socket) => {
 
   // ==================== Command Events ====================
 
-  // Handle robot commands from client
   socket.on('command:send', (data) => {
     const { command, params } = data
+    const currentState = robotStates.get(socket.id)
 
-    console.log(`🎮 Command received: ${command}`, params)
+    console.log(`🎮 Command received (${clientInfo.mode}): ${command}`, params)
 
-    // Process command
+    if (!currentState) return
+
     switch (command) {
       case 'move':
+        // Update position ONLY on move command
+        currentState.lat = params.lat
+        currentState.lon = params.lon
+        currentState.speed = 2.5 // Set a speed while moving
+        robotStates.set(socket.id, currentState)
+
         socket.emit('command:ack', {
           command,
+          mode: clientInfo.mode,
           status: 'success',
-          message: `Robot moving to ${params.lat}, ${params.lon}`,
+          message: `[${clientInfo.mode}] Robot moved to ${params.lat.toFixed(4)}, ${params.lon.toFixed(4)}`,
         })
+        console.log(`✅ Robot moved to: ${params.lat.toFixed(4)}, ${params.lon.toFixed(4)}`)
         break
+
+      case 'rotate':
+        // Update yaw/rotation ONLY on rotate command
+        currentState.yaw = (params.angle || 0) % 360
+        robotStates.set(socket.id, currentState)
+
+        socket.emit('command:ack', {
+          command,
+          mode: clientInfo.mode,
+          status: 'success',
+          message: `[${clientInfo.mode}] Robot rotated to ${params.angle}°`,
+        })
+        console.log(`✅ Robot rotated to: ${params.angle}°`)
+        break
+
       case 'stop':
+        // Stop movement
+        currentState.speed = 0
+        robotStates.set(socket.id, currentState)
+
         socket.emit('command:ack', {
           command,
+          mode: clientInfo.mode,
           status: 'success',
-          message: 'Robot stopped',
+          message: `[${clientInfo.mode}] Robot stopped`,
         })
+        console.log(`✅ Robot stopped at: ${currentState.lat.toFixed(4)}, ${currentState.lon.toFixed(4)}`)
         break
+
       case 'emergency_stop':
+        // Emergency stop
+        currentState.speed = 0
+        robotStates.set(socket.id, currentState)
+
         socket.emit('command:ack', {
           command,
+          mode: clientInfo.mode,
           status: 'success',
-          message: 'Emergency stop activated',
+          message: '🚨 EMERGENCY STOP ACTIVATED',
         })
-        // Notify all clients
+
         io.emit('emergency:triggered', {
           clientId: socket.id,
+          mode: clientInfo.mode,
           timestamp: new Date().toISOString(),
         })
+        console.log(`🚨 EMERGENCY STOP for: ${socket.id}`)
         break
+
       default:
         socket.emit('command:ack', {
           command,
+          mode: clientInfo.mode,
           status: 'error',
           message: `Unknown command: ${command}`,
         })
     }
 
-    // Broadcast command to all clients
     io.emit('command:executed', {
       clientId: socket.id,
       command,
+      mode: clientInfo.mode,
       params,
       timestamp: new Date().toISOString(),
     })
@@ -268,17 +351,14 @@ io.on('connection', (socket) => {
   socket.on('settings:update', (data) => {
     console.log('⚙️ Settings updated:', data)
 
-    // Store settings per client
     clientInfo.settings = data
 
-    // Broadcast to all clients
     io.emit('settings:changed', {
       clientId: socket.id,
       settings: data,
       timestamp: new Date().toISOString(),
     })
 
-    // Confirm receipt
     socket.emit('settings:saved', {
       status: 'success',
       message: 'Settings saved successfully',
@@ -296,11 +376,11 @@ io.on('connection', (socket) => {
 
     console.log(`📝 [${level}] ${message}`)
 
-    // Broadcast logs to all connected clients
     io.emit('log:received', {
       clientId: socket.id,
       message,
       level,
+      mode: clientInfo.mode,
       timestamp,
     })
   })
@@ -316,7 +396,7 @@ io.on('connection', (socket) => {
 
   socket.on('ping', () => {
     clientInfo.lastSeen = new Date()
-    socket.emit('pong', { timestamp: new Date().toISOString() })
+    socket.emit('pong', { timestamp: new Date().toISOString(), mode: clientInfo.mode })
   })
 
   // ==================== Error Handling ====================
@@ -333,36 +413,36 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', (reason) => {
     const operator = clientInfo.operator
+    const mode = modeStates.get(socket.id)
     connectedClients.delete(socket.id)
     robotStates.delete(socket.id)
+    modeStates.delete(socket.id)
 
     console.log(`❌ Client disconnected: ${socket.id} (Reason: ${reason})`)
     if (operator) {
-      console.log(`👤 Operator disconnected: ${operator}`)
+      console.log(`👤 Operator disconnected: ${operator} (Mode: ${mode})`)
     }
 
-    // Clear telemetry interval if active
     if (telemetryInterval) {
       clearInterval(telemetryInterval)
     }
 
-    // Broadcast disconnection to all remaining clients
     io.emit('client:disconnected', {
       clientId: socket.id,
       operator,
+      mode,
       reason,
       timestamp: new Date().toISOString(),
     })
 
-    // Update client count
     io.emit('clientCount', { count: connectedClients.size })
   })
 
   // ==================== Connection Success ====================
 
-  // Send initial connection info
   socket.emit('connection:success', {
     clientId: socket.id,
+    mode: clientInfo.mode,
     timestamp: new Date().toISOString(),
     serverInfo: {
       name: 'Mission Control Server',
@@ -406,11 +486,12 @@ httpServer.listen(PORT, HOST, () => {
 ║ 📡 CORS Enabled
 ║ 🌍 Environment: ${process.env.NODE_ENV || 'development'}
 ║ 👥 Connected Clients: ${connectedClients.size}
+║ 🤖 Mode Support: AI & MANUAL
+║ ✅ Static Position Mode (No Random Movement)
 ╚════════════════════════════════════════════╝
   `)
 })
 
-// Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('📦 SIGTERM received, shutting down gracefully...')
   httpServer.close(() => {

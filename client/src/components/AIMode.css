@@ -1,0 +1,126 @@
+.ai-mode {
+  background: #f5f5f5;
+  padding: 20px;
+  border-radius: 10px;
+  margin-top: 20px;
+}
+
+.ai-mode h2 {
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.info-banner {
+  background: #f3e5f5;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  color: #7b1fa2;
+}
+
+.ai-status {
+  background: white;
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.status-indicator {
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.status-indicator.active {
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.toggle-btn {
+  width: 100%;
+  padding: 15px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: all 0.3s;
+}
+
+.toggle-btn.start {
+  background: #4caf50;
+  color: white;
+}
+
+.toggle-btn.stop {
+  background: #f44336;
+  color: white;
+}
+
+.toggle-btn:hover {
+  transform: translateY(-2px);
+}
+
+.telemetry-section {
+  background: white;
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+}
+
+.sensor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.sensor-card {
+  background: #f0f0f0;
+  padding: 15px;
+  border-radius: 5px;
+  text-align: center;
+}
+
+.sensor-card strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #666;
+}
+
+.sensor-card p {
+  margin: 0;
+}
+
+.value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #2196f3;
+}
+
+.ai-decision-section {
+  background: white;
+  padding: 15px;
+  border-radius: 5px;
+}
+
+.decision-card {
+  background: #e8f5e9;
+  padding: 15px;
+  border-radius: 5px;
+  border-left: 4px solid #4caf50;
+  margin-top: 10px;
+}
+
+.decision-card p {
+  margin: 8px 0;
+}
+
+.decision-card strong {
+  color: #2e7d32;
+}

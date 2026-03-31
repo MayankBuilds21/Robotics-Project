@@ -1,117 +1,159 @@
 import { useEffect, useRef } from 'react'
-import { useSettings } from '../context/SettingsContext'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 
-// OSM dark tiles (CartoDB dark_matter), fallback to standard if not dark
-const TILE_THEMES = {
-  dark: {
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
-  },
-  light: {
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; OpenStreetMap contributors'
-  }
-}
+// Fix for default markers in Leaflet
+delete L.Icon.Default.prototype._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+})
 
-export default function MapView({ path, current }) {
-  const { mapTheme } = useSettings()
-  const containerRef = useRef(null)
+export default function MapView({ path = [], current = {} }) {
   const mapRef = useRef(null)
+  const mapInstanceRef = useRef(null)
+  const markerRef = useRef(null)
+  const polylineRef = useRef(null)
+  const circleRef = useRef(null)
 
+  // Initialize map
   useEffect(() => {
-    if (!window.L) {
-      // Load Leaflet CSS/JS
-      const link = document.createElement('link')
-      link.rel = 'stylesheet'
-      link.href = 'https://unpkg.com/leaflet/dist/leaflet.css'
-      document.head.appendChild(link)
+    if (mapRef.current && !mapInstanceRef.current) {
+      console.log('🗺️ Initializing map...')
+      
+      const map = L.map(mapRef.current).setView([19.0760, 72.8777], 15)
 
-      const script = document.createElement('script')
-      script.src = 'https://unpkg.com/leaflet/dist/leaflet.js'
-      script.onload = () => initializeMap()
-      document.body.appendChild(script)
-    } else {
-      initializeMap()
+      // Add tile layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19,
+      }).addTo(map)
+
+      mapInstanceRef.current = map
     }
-    // eslint-disable-next-line
+
+    return () => {
+      // Don't destroy map on unmount, keep it persistent
+    }
   }, [])
 
-  // Re-render tile layer if mapTheme changes
+  // Update robot position marker and path
   useEffect(() => {
-    if (!window.L || !mapRef.current) return
-    const { map, markers, tileLayer } = mapRef.current
+    if (!mapInstanceRef.current) return
 
-    // Remove previous tile layer
-    if (tileLayer) {
-      map.removeLayer(tileLayer)
+    const map = mapInstanceRef.current
+    const lat = current?.lat || 19.0760
+    const lon = current?.lon || 72.8777
+    const yaw = current?.yaw || 0
+
+    console.log(`📍 Updating position: [${lat}, ${lon}]`)
+
+    // Create or update main marker
+    if (!markerRef.current) {
+      console.log('📌 Creating new marker')
+      
+      const robotIcon = L.divIcon({
+        html: `<div class="flex items-center justify-center w-8 h-8 bg-cyan-500 border-2 border-cyan-300 rounded-full shadow-lg transform" style="transform: rotate(${yaw}deg)">
+          <div class="w-2 h-2 bg-white rounded-full"></div>
+        </div>`,
+        iconSize: [32, 32],
+        className: 'robot-marker',
+      })
+
+      markerRef.current = L.marker([lat, lon], { icon: robotIcon }).addTo(map)
+    } else {
+      // Update marker position and rotation
+      markerRef.current.setLatLng([lat, lon])
+      
+      const robotIcon = L.divIcon({
+        html: `<div class="flex items-center justify-center w-8 h-8 bg-cyan-500 border-2 border-cyan-300 rounded-full shadow-lg" style="transform: rotate(${yaw}deg)">
+          <div class="w-2 h-2 bg-white rounded-full"></div>
+        </div>`,
+        iconSize: [32, 32],
+        className: 'robot-marker',
+      })
+      
+      markerRef.current.setIcon(robotIcon)
     }
-    // Add new tile layer
-    const tiles = window.L.tileLayer(
-      TILE_THEMES[mapTheme]?.url || TILE_THEMES.dark.url,
-      {
-        attribution: TILE_THEMES[mapTheme]?.attribution || TILE_THEMES.dark.attribution,
-        maxZoom: 19,
-        tileSize: 256,
-      }
-    ).addTo(map)
-    mapRef.current.tileLayer = tiles
-  }, [mapTheme])
 
-  const initializeMap = () => {
-    if (!containerRef.current || mapRef.current) return
-
-    const L = window.L
-    const map = L.map(containerRef.current).setView([current.lat, current.lon], 15)
-
-    const tiles = L.tileLayer(
-      TILE_THEMES[mapTheme]?.url || TILE_THEMES.dark.url,
-      {
-        attribution: TILE_THEMES[mapTheme]?.attribution || TILE_THEMES.dark.attribution,
-        maxZoom: 19,
-        tileSize: 256,
-      }
-    ).addTo(map)
-
-    mapRef.current = { map, L, markers: {}, tileLayer: tiles }
-    updateMap()
-  }
-
-  const updateMap = () => {
-    if (!mapRef.current) return
-    const { map, L, markers } = mapRef.current
-
-    // Remove old path
-    if (markers.polyline) map.removeLayer(markers.polyline)
-    if (path.length > 1) {
-      const pathCoords = path.map(p => [p.lat, p.lon])
-      markers.polyline = L.polyline(pathCoords, {
-        color: '#22d3ee', weight: 2, opacity: 0.7, dashArray: '5, 5'
+    // Create or update position circle (accuracy indicator)
+    if (!circleRef.current) {
+      circleRef.current = L.circle([lat, lon], {
+        radius: 5,
+        fillColor: '#06b6d4',
+        color: '#22d3ee',
+        weight: 2,
+        opacity: 0.3,
+        fillOpacity: 0.1,
       }).addTo(map)
+    } else {
+      circleRef.current.setLatLng([lat, lon])
     }
 
-    // Remove old marker
-    if (markers.robot) map.removeLayer(markers.robot)
-    markers.robot = L.circleMarker([current.lat, current.lon], {
-      radius: 10,
-      fillColor: '#22d3ee',
-      color: '#0f172a',
-      weight: 2,
-      opacity: 1,
-      fillOpacity: 0.8
-    })
-      .addTo(map)
-      .bindPopup(
-        `<div style="color:#111;background:#22d3ee;padding:6px 12px;border-radius:6px"><strong>Robot Position</strong><br/>Lat: ${current.lat.toFixed(4)}<br/>Lon: ${current.lon.toFixed(4)}</div>`
-      )
-  }
+    // Update path polyline
+    if (path && path.length > 1) {
+      const pathCoords = path.map(point => [point.lat, point.lon])
 
-  useEffect(() => { updateMap() }, [path, current])
+      if (!polylineRef.current) {
+        console.log('📍 Creating polyline path')
+        polylineRef.current = L.polyline(pathCoords, {
+          color: '#22d3ee',
+          weight: 2,
+          opacity: 0.7,
+          dashArray: '5, 5',
+        }).addTo(map)
+      } else {
+        polylineRef.current.setLatLngs(pathCoords)
+      }
+
+      // Add waypoints
+      path.forEach((point, index) => {
+        if (index > 0 && index % 10 === 0) {
+          L.circleMarker([point.lat, point.lon], {
+            radius: 4,
+            fillColor: '#a855f7',
+            color: '#9333ea',
+            weight: 1,
+            opacity: 0.8,
+          }).addTo(map)
+        }
+      })
+    }
+
+    // Center map on robot
+    map.setView([lat, lon], 15)
+  }, [current, path])
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full h-full bg-slate-800"
-      style={{ zIndex: 1 }}
-    />
+    <div className="w-full h-full relative bg-slate-800">
+      <div
+        ref={mapRef}
+        className="w-full h-full"
+        style={{ zIndex: 1 }}
+      />
+      
+      {/* Position Display Overlay */}
+      <div className="absolute top-4 left-4 z-10 bg-slate-900/80 border border-cyan-500/50 rounded p-3 text-xs">
+        <p className="text-slate-400">
+          Lat: <span className="text-cyan-400 font-mono">{(current?.lat || 19.0760).toFixed(6)}</span>
+        </p>
+        <p className="text-slate-400">
+          Lon: <span className="text-cyan-400 font-mono">{(current?.lon || 72.8777).toFixed(6)}</span>
+        </p>
+        <p className="text-slate-400">
+          Yaw: <span className="text-cyan-400 font-mono">{(current?.yaw || 0).toFixed(1)}°</span>
+        </p>
+        <p className="text-slate-400 mt-1">
+          Path Points: <span className="text-emerald-400 font-mono">{path?.length || 0}</span>
+        </p>
+      </div>
+
+      {/* Zoom Controls Info */}
+      <div className="absolute bottom-4 right-4 z-10 bg-slate-900/80 border border-slate-700 rounded p-2 text-xs text-slate-400">
+        <p>🔍 Scroll to zoom</p>
+        <p>🔄 Drag to pan</p>
+      </div>
+    </div>
   )
 }
